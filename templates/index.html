@@ -3,179 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cipher | Secure File Sharing</title>
+    <title>{{ page_title }} | S3 Storage Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Font Awesome for icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <header class="header">
-        <div class="logo">Cipher</div>
-        <nav class="nav-links">
-            <a href="#">Home</a>
-            <a href="#">How It Works</a>
-            <a href="#">Contact</a>
-            <a href="#" class="donate-btn">Donate</a>
-        </nav>
-    </header>
-
-    <main>
-        <section class="hero">
-            <div class="hero-content">
-                <h1>Share and explore information. Stay private. Stay informed.</h1>
-                <p>A free, secure platform to share vital information and access global knowledge.</p>
-                <button class="upload-btn" onclick="openModal()">
-                    <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Share
-                </button>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-box">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <span>S3 Storage Hub</span>
             </div>
-        </section>
-
-        <section class="dashboard">
-            <div class="search-bar">
-                <i class="fa-solid fa-magnifying-glass" style="color: #6b7280; padding-top: 3px;"></i>
-                <input type="text" placeholder="Search for documents, topics, or keywords...">
-                <button class="action-btn" style="background: #1a1a1a; color: white;">Search</button>
-            </div>
-
-            <h2 class="section-title">Discover</h2>
             
-            <div class="file-list">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Document</th>
-                            <th>Upload Date</th>
-                            <th>Size</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if files %}
-                            {% for file in files %}
-                            <tr>
-                                <td>
-                                    <div class="file-name-cell">
-                                        <div class="file-icon">
-                                            <i class="fa-regular fa-file-lines"></i>
-                                        </div>
-                                        <div class="file-info">
-                                            <span class="name">{{ file.name }}</span>
-                                            <span class="meta">General • Mumbai S3</span>
-                                        </div>
+            <nav class="sidebar-nav">
+                <a href="/?prefix=&view=all" class="nav-item {% if current_view == 'all' %}active{% endif %}">
+                    <i class="fa-solid fa-house"></i> All Files
+                </a>
+                <a href="/?view=recent" class="nav-item {% if current_view == 'recent' %}active{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Recent
+                </a>
+                <a href="/?view=shared" class="nav-item {% if current_view == 'shared' %}active{% endif %}">
+                    <i class="fa-solid fa-share-nodes"></i> Shared
+                </a>
+                <a href="/?view=starred" class="nav-item {% if current_view == 'starred' %}active{% endif %}">
+                    <i class="fa-solid fa-star"></i> Starred
+                </a>
+                <a href="/?view=trash" class="nav-item {% if current_view == 'trash' %}active{% endif %}">
+                    <i class="fa-solid fa-trash-can"></i> Trash
+                </a>
+            </nav>
+
+            <div class="storage-card">
+                <div class="storage-info">
+                    <span>S3 Storage</span>
+                    <span>{{ stats.percent }}% used</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" style="width: {{ stats.percent }}%"></div>
+                </div>
+                <p class="storage-detail">{{ stats.used_gb }} GB / {{ stats.total_gb }} GB</p>
+                <div class="storage-meta">{{ stats.count }} objects found</div>
+            </div>
+
+            <div class="sidebar-footer">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Use</a>
+                <p>&copy; 2026 S3 Storage Hub</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="searchInput" placeholder="Search in all files..." onkeyup="filterFiles()">
+                </div>
+                <div class="header-actions">
+                    {% if is_connected %}
+                        <div class="status-badge connected">
+                            <i class="fa-solid fa-circle-check"></i> AWS connected
+                        </div>
+                    {% else %}
+                        <div class="status-badge disconnected">
+                            <i class="fa-solid fa-circle-exclamation"></i> AWS disconnected
+                        </div>
+                    {% endif %}
+                    
+                    <div class="notification-icon">
+                        <i class="fa-regular fa-bell"></i>
+                        {% if stats.count > 0 %}<span class="dot"></span>{% endif %}
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://ui-avatars.com/api/?name=S3+Hub&background=6366f1&color=fff" alt="User">
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    <div class="flash-container">
+                      {% for category, message in messages %}
+                        <div class="flash {{ category }}">
+                            <i class="fa-solid {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+
+                <!-- Breadcrumbs & Actions -->
+                <div class="action-bar">
+                    <div class="breadcrumbs">
+                        <a href="/?prefix=">All files</a>
+                        {% for crumb in breadcrumbs %}
+                            <i class="fa-solid fa-chevron-right"></i>
+                            <a href="/?prefix={{ crumb.prefix }}">{{ crumb.name }}</a>
+                        {% endfor %}
+                    </div>
+                    <div class="explorer-actions">
+                        {% if current_view == 'all' %}
+                        <button class="btn btn-secondary" onclick="openFolderModal()">
+                            <i class="fa-solid fa-folder-plus"></i> New Folder
+                        </button>
+                        <button class="btn btn-primary" onclick="openUploadModal()">
+                            <i class="fa-solid fa-upload"></i> Upload
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Recent Files Grid (Only show on Root All Files) -->
+                {% if current_view == 'all' and not current_prefix %}
+                <section class="recent-section">
+                    <h3>Recent Uploads</h3>
+                    <div class="recent-grid">
+                        {% if recent_files %}
+                            {% for r_file in recent_files %}
+                                <div class="recent-card" onclick="location.href='/view/{{ r_file.full_path }}'">
+                                    <div class="icon-box {% if r_file.is_image %}image{% else %}word{% endif %}">
+                                        <i class="fa-solid {% if r_file.is_image %}fa-file-image{% else %}fa-file-lines{% endif %}"></i>
                                     </div>
-                                </td>
-                                <td>{{ file.last_modified }}</td>
-                                <td>{{ file.size }}</td>
-                                <td>
-                                    <div class="actions">
-                                        <button class="action-btn" onclick="generateLink('{{ file.name }}')" title="Share">
-                                            <i class="fa-solid fa-share-nodes"></i>
-                                        </button>
-                                        <button class="action-btn" onclick="downloadFile('{{ file.name }}')" title="Download">
-                                            <i class="fa-solid fa-download"></i>
-                                        </button>
+                                    <div class="recent-info">
+                                        <p>{{ r_file.name }}</p>
+                                        <span class="recent-date">{{ r_file.last_modified_str }}</span>
                                     </div>
-                                </td>
-                            </tr>
+                                </div>
                             {% endfor %}
                         {% else %}
-                            <tr>
-                                <td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                                    No files found in S3 bucket.
-                                </td>
-                            </tr>
+                            <p class="no-data">No recent files yet.</p>
                         {% endif %}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </section>
+                {% endif %}
 
-            <!-- Share Success Link Box -->
-            <div id="share-box">
-                <strong>Shareable Link (Expiring in 1 hour):</strong>
-                <p id="share-url"></p>
-                <button class="copy-btn" onclick="copyLink()">Copy Link</button>
+                <!-- File Explorer Table -->
+                <section class="explorer-section">
+                    <div class="table-header">
+                        <div class="col-name">Name</div>
+                        <div class="col-type">Type</div>
+                        <div class="col-date">Date Changed</div>
+                        <div class="col-size">Size</div>
+                        <div class="col-actions"></div>
+                    </div>
+                    <div class="file-list" id="fileList">
+                        {% if files %}
+                            {% for item in files %}
+                                <div class="file-row" data-name="{{ item.name.lower() }}">
+                                    <div class="col-name">
+                                        <div class="item-icon {% if item.is_folder %}folder-icon{% else %}file-icon{% endif %}">
+                                            {% if item.is_folder %}
+                                                <i class="fa-solid fa-folder"></i>
+                                            {% elif item.is_image %}
+                                                <i class="fa-solid fa-image"></i>
+                                            {% else %}
+                                                <i class="fa-solid fa-file-lines"></i>
+                                            {% endif %}
+                                        </div>
+                                        {% if item.is_folder %}
+                                            <a href="/?prefix={{ item.full_path }}" class="item-link">{{ item.name }}</a>
+                                        {% else %}
+                                            {% if current_view == 'recent' %}
+                                                <a href="/view/{{ item.full_path }}" target="_blank" class="item-link">{{ item.name }}</a>
+                                            {% else %}
+                                                <span class="item-name">{{ item.name }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-type">{{ 'Folder' if item.is_folder else 'File' }}</div>
+                                    <div class="col-date">{{ item.last_modified if item.last_modified else (item.last_modified_str if item.last_modified_str else '-') }}</div>
+                                    <div class="col-size">{{ item.size if item.size else '-' }}</div>
+                                    <div class="col-actions">
+                                        <button class="action-btn" onclick="shareFile('{{ item.full_path }}')" title="Share">
+                                            <i class="fa-solid fa-link"></i>
+                                        </button>
+                                        {% if not item.is_folder %}
+                                        <a href="/view/{{ item.full_path }}" target="_blank" class="action-btn" title="View">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        {% endif %}
+                                        <button class="action-btn delete" onclick="confirmDelete('{{ item.full_path }}', {{ 'true' if item.is_folder else 'false' }})" title="Delete">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="fa-regular fa-folder-open"></i>
+                                <p>No files found in {{ page_title }}.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
             </div>
-        </section>
-    </main>
+        </main>
+    </div>
 
-    <!-- Upload Modal -->
+    <!-- Modals -->
     <div id="uploadModal" class="modal">
         <div class="modal-content">
-            <span class="close-modal" onclick="closeModal()">&times;</span>
-            <h2 style="margin-bottom: 1.5rem;">Upload File</h2>
-            <form action="/upload" method="post" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="file-upload" class="file-drop-area" id="drop-area">
-                        <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2rem; color: var(--accent-green); margin-bottom: 1rem;"></i>
-                        <p>Click to select or drag and drop file here</p>
-                        <input type="file" name="file" id="file-upload" style="display: none;" onchange="updateFileName()">
-                        <p id="file-name-preview" style="margin-top: 1rem; font-weight: 600; color: var(--accent-green);"></p>
-                    </label>
+            <h3>Upload File</h3>
+            <p>Target: <code>/{{ current_prefix if current_prefix else '' }}</code></p>
+            <form action="/upload" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="prefix" value="{{ current_prefix }}">
+                <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Click to select or drag and drop</p>
+                    <input type="file" id="fileInput" name="file" required style="display: none;">
                 </div>
-                <button type="submit" class="upload-btn" style="width: 100%;">Upload to S3</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('uploadModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Start Upload</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <script>
-        function openModal() {
-            document.getElementById('uploadModal').style.display = 'flex';
-        }
+    <div id="folderModal" class="modal">
+        <div class="modal-content">
+            <h3>Create Folder</h3>
+            <form action="/create-folder" method="POST">
+                <input type="hidden" name="prefix" value="{{ current_prefix }}">
+                <div class="input-group">
+                    <label>Folder Name</label>
+                    <input type="text" name="folder_name" placeholder="Enter folder name..." required autofocus>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('folderModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-        function closeModal() {
-            document.getElementById('uploadModal').style.display = 'none';
-        }
+    <form id="deleteFileForm" action="" method="POST" style="display: none;">
+        <input type="hidden" name="prefix" value="{{ current_prefix }}">
+    </form>
+    
+    <form id="deleteFolderForm" action="/delete-folder" method="POST" style="display: none;">
+        <input type="hidden" name="current_prefix" value="{{ current_prefix }}">
+        <input type="hidden" name="folder_prefix" id="folderPrefixToDelete">
+    </form>
 
-        function updateFileName() {
-            const input = document.getElementById('file-upload');
-            const preview = document.getElementById('file-name-preview');
-            preview.innerText = input.files[0] ? input.files[0].name : '';
-        }
-
-        function generateLink(filename) {
-            fetch(`/generate-link/${encodeURIComponent(filename)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const box = document.getElementById('share-box');
-                        const urlTag = document.getElementById('share-url');
-                        urlTag.innerText = data.url;
-                        box.style.display = 'block';
-                        box.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                        alert('Error generating share link');
-                    }
-                });
-        }
-
-        function downloadFile(filename) {
-            // Just generate a link and redirect to it
-            fetch(`/generate-link/${encodeURIComponent(filename)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.open(data.url, '_blank');
-                    }
-                });
-        }
-
-        function copyLink() {
-            const text = document.getElementById('share-url').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Link copied to clipboard!');
-            });
-        }
-
-        // Close modal on click outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('uploadModal');
-            if (event.target == modal) {
-                closeModal();
-            }
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
