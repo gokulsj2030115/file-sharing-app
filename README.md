@@ -100,7 +100,7 @@ python app.py
   
   <h3>AWS-PreView</h3>
   <img src="screenshots/trash.png" alt="Trash System" width="800" />
-  <p><i>Never lose a file again with our recursive soft-delete & restore feature</i></p>
+  <p><i>Automatically creates files & Foldres  in S3</i></p>
 </div>
 
 ---
