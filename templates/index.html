@@ -183,17 +183,26 @@
                                     <div class="col-date">{{ item.last_modified if item.last_modified else (item.last_modified_str if item.last_modified_str else '-') }}</div>
                                     <div class="col-size">{{ item.size if item.size else '-' }}</div>
                                     <div class="col-actions">
-                                        <button class="action-btn" onclick="shareFile('{{ item.full_path }}')" title="Share">
-                                            <i class="fa-solid fa-link"></i>
-                                        </button>
-                                        {% if not item.is_folder %}
-                                        <a href="/view/{{ item.full_path }}" target="_blank" class="action-btn" title="View">
-                                            <i class="fa-solid fa-eye"></i>
-                                        </a>
+                                        {% if current_view == 'trash' %}
+                                            <button class="action-btn" onclick="restoreFile('{{ item.full_path }}')" title="Restore">
+                                                <i class="fa-solid fa-rotate-left" style="color: var(--primary);"></i>
+                                            </button>
+                                            <button class="action-btn delete" onclick="confirmPermanentDelete('{{ item.full_path }}')" title="Delete Permanently">
+                                                <i class="fa-solid fa-trash-can" style="color: #ef4444;"></i>
+                                            </button>
+                                        {% else %}
+                                            <button class="action-btn" onclick="shareFile('{{ item.full_path }}')" title="Share">
+                                                <i class="fa-solid fa-link"></i>
+                                            </button>
+                                            {% if not item.is_folder %}
+                                            <a href="/view/{{ item.full_path }}" target="_blank" class="action-btn" title="View">
+                                                <i class="fa-solid fa-eye"></i>
+                                            </a>
+                                            {% endif %}
+                                            <button class="action-btn delete" onclick="confirmDelete('{{ item.full_path }}', {{ 'true' if item.is_folder else 'false' }})" title="Delete">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
                                         {% endif %}
-                                        <button class="action-btn delete" onclick="confirmDelete('{{ item.full_path }}', {{ 'true' if item.is_folder else 'false' }})" title="Delete">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
                                     </div>
                                 </div>
                             {% endfor %}

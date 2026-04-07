@@ -146,6 +146,40 @@ class S3Service:
             print(f"S3 Create Folder Error: {e}")
             return False
 
+    def copy_object(self, source_key, destination_key):
+        """Helper to copy an object in S3."""
+        try:
+            copy_source = {'Bucket': self.bucket_name, 'Key': source_key}
+            self.s3.copy_object(CopySource=copy_source, Bucket=self.bucket_name, Key=destination_key)
+            return True
+        except ClientError as e:
+            print(f"S3 Copy Error: {e}")
+            return False
+
+    def move_to_trash(self, key):
+        """Moves an object to the trash/ prefix."""
+        try:
+            trash_key = f"trash/{key}"
+            if self.copy_object(key, trash_key):
+                self.s3.delete_object(Bucket=self.bucket_name, Key=key)
+                return True
+            return False
+        except ClientError as e:
+            print(f"S3 Move to Trash Error: {e}")
+            return False
+
+    def restore_from_trash(self, trash_key):
+        """Moves an object from the trash/ prefix back to its original path."""
+        try:
+            original_key = trash_key.replace('trash/', '', 1)
+            if self.copy_object(trash_key, original_key):
+                self.s3.delete_object(Bucket=self.bucket_name, Key=trash_key)
+                return True
+            return False
+        except ClientError as e:
+            print(f"S3 Restore Error: {e}")
+            return False
+
     def delete_recursive(self, prefix):
         """Deletes all objects with a given prefix (effectively deleting a folder)"""
         try:
@@ -179,6 +213,7 @@ class S3Service:
             return False
 
     def delete_file(self, filename):
+        """Permanently deletes an object."""
         try:
             self.s3.delete_object(Bucket=self.bucket_name, Key=filename)
             return True
@@ -186,14 +221,17 @@ class S3Service:
             print(f"S3 Delete Error: {e}")
             return False
 
-    def get_presigned_url(self, filename, expiration=3600):
+    def get_presigned_url(self, filename, expiration=3600, inline=False):
         try:
+            # If inline is True, the file will open in the browser instead of downloading
+            disposition = 'inline' if inline else f'attachment; filename="{filename.split("/")[-1]}"'
+            
             url = self.s3.generate_presigned_url(
                 'get_object',
                 Params={
                     'Bucket': self.bucket_name, 
                     'Key': filename,
-                    'ResponseContentDisposition': f'attachment; filename="{filename}"'
+                    'ResponseContentDisposition': disposition
                 },
                 ExpiresIn=expiration
             )

@@ -31,7 +31,7 @@ def index():
         files = [] # Placeholder for future implementation
         title = "Starred Files"
     elif view == 'trash':
-        files = [] # Placeholder for future implementation
+        files = s3.list_files('trash/')
         title = "Trash"
     else:
         files = s3.list_files(prefix)
@@ -98,12 +98,32 @@ def create_folder():
 @app.route('/delete/<path:filename>', methods=['POST'])
 def delete_file(filename):
     prefix = request.args.get('prefix', '')
+    # If already in trash, permanent delete? No, let's keep it separate
+    # For now, move to trash
+    success = s3.move_to_trash(filename)
+    if success:
+        flash(f'Moved "{filename.split("/")[-1]}" to Trash.', 'success')
+    else:
+        flash(f'Error moving to Trash.', 'error')
+    return redirect(url_for('index', prefix=prefix))
+
+@app.route('/restore/<path:filename>', methods=['POST'])
+def restore_file(filename):
+    success = s3.restore_from_trash(filename)
+    if success:
+        flash(f'Restored "{filename.split("/")[-1]}" successfully.', 'success')
+    else:
+        flash(f'Error restoring file.', 'error')
+    return redirect(url_for('index', view='trash'))
+
+@app.route('/permanent-delete/<path:filename>', methods=['POST'])
+def permanent_delete(filename):
     success = s3.delete_file(filename)
     if success:
-        flash(f'File {filename} deleted successfully!', 'success')
+        flash(f'Permanently deleted "{filename.split("/")[-1]}".', 'success')
     else:
-        flash(f'Error deleting {filename} from S3.', 'error')
-    return redirect(url_for('index', prefix=prefix))
+        flash(f'Error deleting file.', 'error')
+    return redirect(url_for('index', view='trash'))
 
 @app.route('/delete-folder', methods=['POST'])
 def delete_folder():
@@ -131,8 +151,8 @@ def share_link(filename):
 
 @app.route('/view/<path:filename>')
 def view_file(filename):
-    # Directly redirects to the presigned URL for viewing
-    url = s3.get_presigned_url(filename)
+    # Get a presigned URL with inline disposition for browser viewing
+    url = s3.get_presigned_url(filename, inline=True)
     if url:
         return redirect(url)
     flash("Could not open file.", "error")

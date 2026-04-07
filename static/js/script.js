@@ -64,19 +64,33 @@ function copyToClipboard(text) {
 // Delete Logic
 function confirmDelete(fullPath, isFolder) {
     const message = isFolder 
-        ? `Are you sure you want to delete the folder "${fullPath}"? This will recursively delete ALL files inside it.` 
-        : `Are you sure you want to delete "${fullPath}"?`;
+        ? `Move folder "${fullPath}" and all its contents to Trash?` 
+        : `Move "${fullPath}" to Trash?`;
 
     if (confirm(message)) {
-        if (isFolder) {
-            const form = document.getElementById('deleteFolderForm');
-            document.getElementById('folderPrefixToDelete').value = fullPath;
-            form.submit();
-        } else {
-            const form = document.getElementById('deleteFileForm');
-            form.action = `/delete/${encodeURIComponent(fullPath)}?prefix=${encodeURIComponent(getCurrentPrefix())}`;
-            form.submit();
-        }
+        const form = document.getElementById('deleteFileForm');
+        form.action = `/delete/${encodeURIComponent(fullPath)}?prefix=${encodeURIComponent(getCurrentPrefix())}`;
+        form.submit();
+    }
+}
+
+function restoreFile(fullPath) {
+    if (confirm(`Restore "${fullPath}" to its original location?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/restore/${encodeURIComponent(fullPath)}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function confirmPermanentDelete(fullPath) {
+    if (confirm(`PERMANENTLY DELETE "${fullPath}"? This cannot be undone.`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/permanent-delete/${encodeURIComponent(fullPath)}`;
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
