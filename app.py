@@ -134,11 +134,12 @@ def delete_folder():
         flash('No folder specified.', 'error')
         return redirect(url_for('index', prefix=current_prefix))
         
-    success = s3.delete_recursive(folder_prefix)
+    # Soft delete: move folder recursively to trash
+    success = s3.move_to_trash(folder_prefix)
     if success:
-        flash(f'Folder deleted successfully!', 'success')
+        flash(f'Moved folder to Trash.', 'success')
     else:
-        flash(f'Error deleting folder.', 'error')
+        flash(f'Error moving folder to Trash.', 'error')
     return redirect(url_for('index', prefix=current_prefix))
 
 @app.route('/share/<path:filename>')

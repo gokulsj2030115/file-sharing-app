@@ -156,25 +156,49 @@ class S3Service:
             print(f"S3 Copy Error: {e}")
             return False
 
+    def move_recursive(self, src_prefix, dest_prefix):
+        """Recursively copies all objects from one prefix to another and deletes original."""
+        try:
+            paginator = self.s3.get_paginator('list_objects_v2')
+            pages = paginator.paginate(Bucket=self.bucket_name, Prefix=src_prefix)
+
+            for page in pages:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        old_key = obj['Key']
+                        new_key = old_key.replace(src_prefix, dest_prefix, 1)
+                        if self.copy_object(old_key, new_key):
+                            self.s3.delete_object(Bucket=self.bucket_name, Key=old_key)
+            return True
+        except ClientError as e:
+            print(f"S3 Recursive Move Error: {e}")
+            return False
+
     def move_to_trash(self, key):
-        """Moves an object to the trash/ prefix."""
+        """Moves an object or folder recursively to the trash/ prefix."""
         try:
             trash_key = f"trash/{key}"
-            if self.copy_object(key, trash_key):
-                self.s3.delete_object(Bucket=self.bucket_name, Key=key)
-                return True
+            if key.endswith('/'):
+                return self.move_recursive(key, trash_key)
+            else:
+                if self.copy_object(key, trash_key):
+                    self.s3.delete_object(Bucket=self.bucket_name, Key=key)
+                    return True
             return False
         except ClientError as e:
             print(f"S3 Move to Trash Error: {e}")
             return False
 
     def restore_from_trash(self, trash_key):
-        """Moves an object from the trash/ prefix back to its original path."""
+        """Moves an object or folder recursively from trash/ back to original path."""
         try:
             original_key = trash_key.replace('trash/', '', 1)
-            if self.copy_object(trash_key, original_key):
-                self.s3.delete_object(Bucket=self.bucket_name, Key=trash_key)
-                return True
+            if trash_key.endswith('/'):
+                return self.move_recursive(trash_key, original_key)
+            else:
+                if self.copy_object(trash_key, original_key):
+                    self.s3.delete_object(Bucket=self.bucket_name, Key=trash_key)
+                    return True
             return False
         except ClientError as e:
             print(f"S3 Restore Error: {e}")

@@ -19,6 +19,7 @@
 - [🎨 Design System](#-design-system)
 - [🚀 Rapid Deployment](#-rapid-deployment)
 - [📂 Project Topology](#-project-topology)
+- [📸 App Preview](#-app-preview)
 - [🛡️ Security Architecture](#️-security-architecture)
 
 ---
@@ -85,6 +86,22 @@ python app.py
 - **Principle of Least Privilege**: Bucket access is scoped via instance profiles.
 - **Public Access Block**: S3 bucket remains private; only the backend interacts with objects.
 - **Time-Bound Access**: Temporary URLs ensure that shared links expire automatically.
+
+---
+
+## 📸 App Preview
+
+<div align="center">
+  <h3>Web-Preview</h3>
+  <img src="screenshots/dashboard.png" alt="S3 Storage Hub Dashboard" width="800" />
+  <p><i>Effortless S3 prefix-based navigation with real-time stats</i></p>
+  
+  <br/>
+  
+  <h3>AWS-PreView</h3>
+  <img src="screenshots/trash.png" alt="Trash System" width="800" />
+  <p><i>Never lose a file again with our recursive soft-delete & restore feature</i></p>
+</div>
 
 ---
 
